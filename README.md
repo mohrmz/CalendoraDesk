@@ -1,40 +1,69 @@
-# معرفی
+# Calendora Desk
 
-![GitHub](https://img.shields.io/github/license/rezaghz/loutos)
-![GitHub language count](https://img.shields.io/github/languages/count/rezaghz/loutos)
-![GitHub top language](https://img.shields.io/github/languages/top/rezaghz/loutos)
-[![Github All Releases](https://img.shields.io/github/downloads/rezaghz/loutos/total.svg)]()
+Calendora Desk is a lightweight and modern **desktop application built with Vue.js**, designed to showcase development speed, UI creativity, and clean architectural skills.  
+Inspired by the structure of *Loutos*, this project focuses on delivering a smooth, minimal, and elegant multi-calendar experience for desktop environments.
 
+---
 
-<p align="center">
-    <img src="/assets/socialcard.jpg" width="700" alt="loutos">
-</p>
+## 🌐 Overview
 
-لوتوس یک دستیار رومیزی فارسی که برای سیستم عامل های ویندوز ، مک و لینوکس طراحی شده که شامل ابزار های مختلف مثل تقویم ، اوقات شرعی ،  تبدیل تاریخ ، دفترچه
-یادداشت و ...
+The application provides full support for **Jalali (Solar Hijri), Hijri (Lunar), and Gregorian** calendars, complete with monthly views, date conversion, and reminders.  
+Although functional, Calendora Desk is **not intended for production use**—its sole purpose is to represent versatility, design ability, and rapid development capability.
 
-## دانلود
+---
 
-برای دانلود به صفحه [releases](https://github.com/rezaghz/loutos/releases) مراجعه کنید
+## ✨ Features
 
-## اسکرین شات ها
+### 📅 Multi-Calendar Support
+- Full monthly calendars for:
+  - **Jalali (Iranian Solar Calendar)**
+  - **Hijri (Islamic Lunar Calendar)**
+  - **Gregorian**
+- Independent navigation for each calendar (month/year switching)
+- Minimal and clean calendar layout
 
-<p align="center">
-    <img src="assets/scr-1.png" alt="loutos screenshot 1" width="600">
-</p>
-<p align="center">
-    <img src="assets/scr-2.png" alt="loutos screenshot 2" width="600">
-</p>
-<p align="center">
-    <img src="assets/scr-3.png" alt="loutos screenshot 3" width="600">
-</p>
-<p align="center">
-    <img src="assets/scr-4.png" alt="loutos screenshot 4" width="600">
-</p>
+### 🔄 Smart Date Conversion
+- Select a single date in one calendar
+- Instantly view its **equivalent date** in the other two calendars
+- Uses custom conversion logic and precise algorithms
 
-## نحوه Build
+### 🔔 In-App Reminders
+- Create reminders for any date
+- Receive **local in-app notifications**
+- Lightweight and simple for quick use
 
-``` bash
+### 🎨 Minimalistic UI
+- Fully custom, elegant, and modern interface  
+- Not based on templates or UI kits  
+- Smooth micro-interactions and a distraction-free layout
+
+### 🌓 Theme System
+- Built-in **Light / Dark mode**
+- User preference stored locally and applied automatically on startup
+
+### ⚙️ Desktop Ready
+- Built using **Vue.js + Vite**  
+- Packaged for desktop use via **Electron**
+
+---
+
+## 🛠️ Tech Stack
+
+- **Vue.js 3**
+- **Vite**
+- **Electron** (desktop packaging)
+- **Day.js** or custom date utilities
+
+---
+
+## 📁 Installation & Setup
+
+Clone the repository:
+
+```bash
+git clone https://github.com/mohrmz/CalendoraDesk
+cd CalendoraDesk
+
 # install dependencies
 npm install
 
@@ -43,29 +72,3 @@ npm run dev
 
 # build electron application for production
 npm run build
-```
-## حمایت
-
-<p align="center">
- <a href="https://daramet.com/rezaghz" target="_blank">
-        <img src="https://user-images.githubusercontent.com/36597017/190224192-e2d29a3e-2b60-43ce-b66c-e477eb6f6e9d.jpg" width="250" alt="Donation via Daramet">
-    </a>
-</p>
-
-<p align="center">
- <a href="https://yekpay.me/en/rezaghz" target="_blank">
-        <img src="https://user-images.githubusercontent.com/36597017/190222767-4b90991f-b120-45ad-b998-e52be71143ac.png" width="250" alt="Donation via Yekpay">
-    </a>
-</p>
-
-
-
-
-
-## لاگ تغییرات
-
-شما میتونید [لاگ تغییرات](changelog.md) رو برای اطلاعات بیشتر و تغییرات اخیر مشاهده کنید
-
-## مسیر پیشرفت
-
-[مسیر پیشرفت](https://trello.com/b/90VwIm3M/loutos) لوتوس در ترلو ساخته شده شما میتونید اون رو مشاهده کنید 
