@@ -103,7 +103,7 @@ export default {
   },
   mounted() {
     let self = this;
-    db.info().then(function (result) {
+    eventsDb.info().then(function (result) {
       console.warn("connected successfully");
     }).catch(function (err) {
       console.log(err);
@@ -118,7 +118,7 @@ export default {
     }).catch(function (err) {
         // error!
     });*/
-    db.allDocs({include_docs: true, descending: false}, function (err, doc) {
+    eventsDb.allDocs({include_docs: true, descending: false}, function (err, doc) {
       doc.rows.forEach(val => {
         let doc = val.doc;
         self.notes.push({
@@ -142,7 +142,7 @@ export default {
     add() {
       let self = this;
       if (this.title.length > 0 || this.description.length > 0) {
-        db.post({
+        eventsDb.post({
           title: this.title,
           description: this.description,
           color: this.background_color_new_body,
@@ -167,7 +167,7 @@ export default {
       self.mode = "edit";
       self.current_id = id;
       self.current_index = index;
-      db.get(id).then(function (doc) {
+      eventsDb.get(id).then(function (doc) {
         self.title = doc.title;
         self.description = doc.description;
         self.background_color_new_body = doc.color;
@@ -177,8 +177,8 @@ export default {
     },
     update() {
       let self = this;
-      db.get(self.current_id).then(function (doc) {
-        return db.put({
+      eventsDb.get(self.current_id).then(function (doc) {
+        return eventsDb.put({
           _id: self.current_id,
           _rev: doc._rev,
           title: self.title,
@@ -209,8 +209,8 @@ export default {
       })
           .then((willDelete) => {
             if (willDelete) {
-              db.get(id).then(function (doc) {
-                return db.remove(doc);
+              eventsDb.get(id).then(function (doc) {
+                return eventsDb.remove(doc);
               }).then(function (result) {
                 swal("یادداشت با موفقیت پاک شد", {
                   icon: "success",

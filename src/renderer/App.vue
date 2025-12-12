@@ -1,5 +1,5 @@
 <template>
-  <div id="app" :class="themeClass">
+  <div id="app">
     <router-view></router-view>
     <notification-container />
   </div>
@@ -14,16 +14,10 @@ export default {
   components: {
     NotificationContainer
   },
-  computed: {
-    themeClass() {
-      return this.$store.getters['Theme/isDark'] ? 'dark-theme' : 'light-theme'
-    }
-  },
   mounted() {
-    // Initialize theme
+    // Initialize theme on mount
     this.$store.dispatch('Theme/initTheme')
     
-    // Start reminder service
     ReminderService.startChecking()
   },
   beforeDestroy() {
@@ -41,7 +35,9 @@ export default {
   @import url('~@/assets/css/style.css');
 
   /* Global Theme Variables */
-  :root {
+  :root,
+  :root.light-theme,
+  html.light-theme {
     --bg-primary: #ffffff;
     --bg-secondary: #f8f9fa;
     --bg-tertiary: #e9ecef;
@@ -51,6 +47,7 @@ export default {
     --border-color: #dee2e6;
     --accent-color: #6366f1;
     --accent-hover: #4f46e5;
+    --accent-light: rgba(99, 102, 241, 0.1);
     --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
@@ -62,7 +59,8 @@ export default {
     --radius-lg: 0.75rem;
   }
 
-  .dark-theme {
+  :root.dark-theme,
+  html.dark-theme {
     --bg-primary: #1a1a1a;
     --bg-secondary: #242424;
     --bg-tertiary: #2d2d2d;
@@ -72,6 +70,7 @@ export default {
     --border-color: #404040;
     --accent-color: #818cf8;
     --accent-hover: #6366f1;
+    --accent-light: rgba(129, 140, 248, 0.1);
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);

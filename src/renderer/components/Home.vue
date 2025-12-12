@@ -86,6 +86,7 @@
           <div
             class="day-cell"
             @click="selectDate(day)"
+            @contextmenu.prevent="showContextMenu($event, day)"
             v-for="day in day_of_calendar"
             :key="`${day.year}-${day.month}-${day.day}`"
           >
@@ -102,6 +103,24 @@
       </div>
           </div>
         </div>
+
+        <!-- Context Menu -->
+        <div 
+          class="context-menu" 
+          v-if="contextMenu.visible"
+          :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+          @click.stop
+        >
+          <div class="context-menu-item" @click="addReminderFromContext">
+            <i class="fa fa-bell"></i>
+            <span>افزودن یادآور</span>
+          </div>
+        </div>
+        <div 
+          class="context-menu-overlay" 
+          v-if="contextMenu.visible"
+          @click="hideContextMenu"
+        ></div>
 
         <div class="go_today" @click="goToday()" v-if="show_go_today_btn">
           <button class="btn rounded-circle">
@@ -170,6 +189,59 @@
             </div>
           </div>
         </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
+
+        <!-- Day Reminders Section -->
+        <div class="reminders-section" v-if="selectedDate">
+          <h4 class="events-title">یادآورهای روز</h4>
+          <div v-if="dayReminders.length > 0" class="reminders-list">
+            <div 
+              v-for="reminder in dayReminders" 
+              :key="reminder._id"
+              class="reminder-item"
+            >
+              <div class="reminder-item-header">
+                <i class="fa fa-bell"></i>
+                <span class="reminder-item-title">{{ reminder.title }}</span>
+                <span v-if="reminder.time" class="reminder-item-time">
+                  {{ formatReminderTime(reminder.time) }}
+                </span>
+              </div>
+              <p v-if="reminder.description" class="reminder-item-description">{{ reminder.description }}</p>
+            </div>
+          </div>
+          <div v-else class="empty-reminders">
+            <i class="fa fa-bell-o"></i>
+            <p>یادآوری برای این روز ثبت نشده است</p>
+          </div>
+        </div>
+
+        <!-- Month Reminders Section -->
+        <div class="reminders-section">
+          <h4 class="events-title">یادآورهای ماه</h4>
+          <div v-if="monthReminders.length > 0" class="reminders-list">
+            <div 
+              v-for="reminder in monthReminders" 
+              :key="reminder._id"
+              class="reminder-item"
+            >
+              <div class="reminder-item-header">
+                <i class="fa fa-bell"></i>
+                <span class="reminder-item-title">{{ reminder.title }}</span>
+                <span class="reminder-item-date">{{ formatReminderDateShort(reminder) }}</span>
+                <span v-if="reminder.time" class="reminder-item-time">
+                  {{ formatReminderTime(reminder.time) }}
+                </span>
+              </div>
+              <p v-if="reminder.description" class="reminder-item-description">{{ reminder.description }}</p>
+            </div>
+          </div>
+          <div v-else class="empty-reminders">
+            <i class="fa fa-bell-o"></i>
+            <p>یادآوری برای این ماه ثبت نشده است</p>
+          </div>
+        </div>
       </div>
     </div>
     <sidebar/>
@@ -180,6 +252,7 @@
 import Sidebar from './Partials/Sidebar';
 import find from "pouchdb-find";
 import PouchDB from "pouchdb";
+import ReminderService from '../services/ReminderService';
 
 PouchDB.plugin(find);
 const eventsDb = new PouchDB('events');
@@ -209,7 +282,17 @@ export default {
       showMonthPicker: false,
       showYearPicker: false,
       // Week days based on calendar type
-      weekDays: ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+      weekDays: ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'],
+      // Context menu
+      contextMenu: {
+        visible: false,
+        x: 0,
+        y: 0,
+        day: null
+      },
+      // Reminders
+      dayReminders: [],
+      monthReminders: []
     }
   },
   computed: {
@@ -272,6 +355,7 @@ export default {
   },
   mounted() {
     this.initCalendar();
+    this.loadReminders();
   },
   methods: {
     initCalendar() {
@@ -766,11 +850,15 @@ export default {
         gregorian: gregorianMonths[gregDate.month - 1] + ' ' + gregDate.day + ', ' + gregDate.year,
         gregorianNumeral: `${gregDate.year}/${String(gregDate.month).padStart(2, '0')}/${String(gregDate.day).padStart(2, '0')}`,
         hijri: this.formatHijriDate(hijriDate),
-        hijriNumeral: `${hijriDate.year}/${String(hijriDate.month).padStart(2, '0')}/${String(hijriDate.day).padStart(2, '0')}`
+        hijriNumeral: `${hijriDate.year}/${String(hijriDate.month).padStart(2, '0')}/${String(hijriDate.day).padStart(2, '0')}`,
+        jalaliDate: jalaliDate,
+        gregorianDate: gregDate,
+        hijriDate: hijriDate
       };
       
       this.getEvents(jalaliDate.year, jalaliDate.month, jalaliDate.day, hijriDate);
       this.getMonthEvents();
+      this.loadDayReminders();
     },
     selectToday() {
       const today = new window.persianDate();
@@ -819,6 +907,7 @@ export default {
       }
       
       this.createCalendar();
+      this.loadMonthReminders();
     },
     nextMonth() {
       this.show_go_today_btn = true;
@@ -842,6 +931,7 @@ export default {
       }
       
       this.createCalendar();
+      this.loadMonthReminders();
     },
     goToday() {
       this.show_go_today_btn = false;
@@ -1114,6 +1204,217 @@ export default {
         return String(year);
       }
       return year;
+    },
+    showContextMenu(event, day) {
+      this.contextMenu.visible = true;
+      this.contextMenu.x = event.clientX;
+      this.contextMenu.y = event.clientY;
+      this.contextMenu.day = day;
+    },
+    hideContextMenu() {
+      this.contextMenu.visible = false;
+      this.contextMenu.day = null;
+    },
+    addReminderFromContext() {
+      if (!this.contextMenu.day) {
+        this.hideContextMenu();
+        return;
+      }
+
+      const day = this.contextMenu.day;
+      let dateData = {};
+      
+      // Get date based on selected calendar type
+      if (this.selectedCalendarType === 'jalali') {
+        dateData = {
+          calendar: 'jalali',
+          year: day.jalaliDate.year,
+          month: day.jalaliDate.month,
+          day: day.jalaliDate.day
+        };
+      } else if (this.selectedCalendarType === 'gregorian') {
+        dateData = {
+          calendar: 'gregorian',
+          year: day.gregorianDate.year,
+          month: day.gregorianDate.month,
+          day: day.gregorianDate.day
+        };
+      } else {
+        dateData = {
+          calendar: 'hijri',
+          year: day.hijriDate.year,
+          month: day.hijriDate.month,
+          day: day.hijriDate.day
+        };
+      }
+
+      // Navigate to reminders page with query parameters
+      this.$router.push({
+        name: 'reminders',
+        query: dateData
+      });
+
+      this.hideContextMenu();
+    },
+    async loadReminders() {
+      try {
+        await this.loadDayReminders();
+        await this.loadMonthReminders();
+      } catch (error) {
+        console.error('Error loading reminders:', error);
+      }
+    },
+    async loadDayReminders() {
+      if (!this.selectedDate) {
+        this.dayReminders = [];
+        return;
+      }
+
+      try {
+        const allReminders = await ReminderService.getAll();
+        this.dayReminders = [];
+
+        // Check reminders for the selected date in all calendar types
+        for (const reminder of allReminders) {
+          if (!reminder.enabled) continue;
+
+          let matches = false;
+
+          if (reminder.calendar === 'jalali') {
+            matches = reminder.date.year === this.selectedDate.jalaliDate.year &&
+                     reminder.date.month === this.selectedDate.jalaliDate.month &&
+                     reminder.date.day === this.selectedDate.jalaliDate.day;
+          } else if (reminder.calendar === 'gregorian') {
+            matches = reminder.date.year === this.selectedDate.gregorianDate.year &&
+                     reminder.date.month === this.selectedDate.gregorianDate.month &&
+                     reminder.date.day === this.selectedDate.gregorianDate.day;
+          } else if (reminder.calendar === 'hijri') {
+            matches = reminder.date.year === this.selectedDate.hijriDate.year &&
+                     reminder.date.month === this.selectedDate.hijriDate.month &&
+                     reminder.date.day === this.selectedDate.hijriDate.day;
+          }
+
+          if (matches) {
+            this.dayReminders.push(reminder);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading day reminders:', error);
+        this.dayReminders = [];
+      }
+    },
+    async loadMonthReminders() {
+      try {
+        const allReminders = await ReminderService.getAll();
+        this.monthReminders = [];
+
+        // Get current month based on selected calendar type
+        let currentYear, currentMonth;
+
+        if (this.selectedCalendarType === 'jalali') {
+          currentYear = this.year;
+          currentMonth = this.month;
+        } else if (this.selectedCalendarType === 'gregorian') {
+          currentYear = this.year;
+          currentMonth = this.month;
+        } else {
+          currentYear = this.year;
+          currentMonth = this.month;
+        }
+
+        // Filter reminders for current month
+        for (const reminder of allReminders) {
+          if (!reminder.enabled) continue;
+
+          // Convert reminder date to current calendar type for comparison
+          let reminderYear, reminderMonth;
+
+          if (reminder.calendar === this.selectedCalendarType) {
+            reminderYear = reminder.date.year;
+            reminderMonth = reminder.date.month;
+          } else {
+            // Need to convert
+            if (this.selectedCalendarType === 'jalali') {
+              if (reminder.calendar === 'gregorian') {
+                const gregDate = new Date(reminder.date.year, reminder.date.month - 1, reminder.date.day);
+                const jalali = new window.persianDate(gregDate);
+                reminderYear = jalali.year();
+                reminderMonth = jalali.month();
+              } else if (reminder.calendar === 'hijri') {
+                // Convert hijri to jalali
+                const gregDate = this.hijriToGregorian(reminder.date);
+                const jalali = new window.persianDate(gregDate);
+                reminderYear = jalali.year();
+                reminderMonth = jalali.month();
+              }
+            } else if (this.selectedCalendarType === 'gregorian') {
+              if (reminder.calendar === 'jalali') {
+                const persianDate = new window.persianDate([reminder.date.year, reminder.date.month, reminder.date.day]);
+                const greg = persianDate.toCalendar('gregorian').toLocale('en');
+                reminderYear = parseInt(greg.format('YYYY'));
+                reminderMonth = parseInt(greg.format('MM'));
+              } else if (reminder.calendar === 'hijri') {
+                const gregDate = this.hijriToGregorian(reminder.date);
+                reminderYear = gregDate.getFullYear();
+                reminderMonth = gregDate.getMonth() + 1;
+              }
+            } else {
+              // Hijri calendar
+              if (reminder.calendar === 'jalali') {
+                const hijri = this.jalaliToHijri(reminder.date.year, reminder.date.month, reminder.date.day);
+                reminderYear = hijri.year;
+                reminderMonth = hijri.month;
+              } else if (reminder.calendar === 'gregorian') {
+                const gregDate = new Date(reminder.date.year, reminder.date.month - 1, reminder.date.day);
+                const hijri = this.gregorianToHijri(gregDate);
+                reminderYear = hijri.year;
+                reminderMonth = hijri.month;
+              }
+            }
+          }
+
+          if (reminderYear === currentYear && reminderMonth === currentMonth) {
+            this.monthReminders.push(reminder);
+          }
+        }
+
+        // Sort by day
+        this.monthReminders.sort((a, b) => {
+          const dayA = a.date.day || 0;
+          const dayB = b.date.day || 0;
+          return dayA - dayB;
+        });
+      } catch (error) {
+        console.error('Error loading month reminders:', error);
+        this.monthReminders = [];
+      }
+    },
+    hijriToGregorian(hijriDate) {
+      if (!window.moment) {
+        return new Date();
+      }
+      const hijriMoment = window.moment(`${hijriDate.year}/${hijriDate.month}/${hijriDate.day}`, 'iYYYY/iM/iD');
+      const gregMoment = hijriMoment.clone().locale('en');
+      return new Date(gregMoment.year(), gregMoment.month(), gregMoment.date());
+    },
+    gregorianToHijri(gregDate) {
+      if (!window.moment) {
+        return { year: 1445, month: 1, day: 1 };
+      }
+      const hijriMoment = window.moment(gregDate);
+      return {
+        year: hijriMoment.iYear(),
+        month: hijriMoment.iMonth() + 1,
+        day: hijriMoment.iDate()
+      };
+    },
+    formatReminderTime(time) {
+      const hour = String(time.hour).padStart(2, '0');
+      const minute = String(time.minute).padStart(2, '0');
+      return `${hour}:${minute}`;
+    },
+    formatReminderDateShort(reminder) {
+      return `${reminder.date.day}/${reminder.date.month}`;
     }
   },
   watch: {
@@ -1128,6 +1429,10 @@ export default {
         });
       }
     }
+  },
+  beforeDestroy() {
+    // Hide context menu when component is destroyed
+    this.hideContextMenu();
   }
 }
 </script>
@@ -1729,5 +2034,137 @@ export default {
 
 .years-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+.reminders-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reminder-item {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.reminder-item:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateX(-2px);
+}
+
+.reminder-item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.reminder-item-header i {
+  color: var(--accent-color);
+  font-size: 16px;
+  width: 16px;
+  text-align: center;
+}
+
+.reminder-item-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reminder-item-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.reminder-item-time {
+  font-size: 12px;
+  color: var(--accent-color);
+  background: var(--accent-light);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.reminder-item-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  margin-top: 8px;
+}
+
+.empty-reminders {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-reminders i {
+  font-size: 36px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.empty-reminders p {
+  font-size: 13px;
+  margin: 0;
+}
+
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.context-menu {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 180px;
+  padding: 4px;
+  direction: rtl;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.context-menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.context-menu-item i {
+  color: var(--accent-color);
+  width: 16px;
+  text-align: center;
 }
 </style>

@@ -2,7 +2,7 @@ const { remote } = require('electron')
 
 class NotificationService {
   constructor() {
-    this.permissionGranted = true // Electron notifications are always available
+    this.permissionGranted = true 
   }
 
   /**
@@ -32,7 +32,6 @@ class NotificationService {
         if (options.onClick) {
           options.onClick()
         }
-        // Focus the main window
         const mainWindow = remote.BrowserWindow.getAllWindows()[0]
         if (mainWindow) {
           mainWindow.show()

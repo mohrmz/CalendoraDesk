@@ -98,11 +98,13 @@
                   v-model.number="formData.date.year"
                   class="form-control"
                   :placeholder="getYearPlaceholder()"
+                  @input="formData.date.day = null"
                 />
               </div>
               <div class="form-group">
                 <label>ماه</label>
-                <select v-model.number="formData.date.month" class="form-control">
+                <select v-model.number="formData.date.month" class="form-control" @change="formData.date.day = null">
+                  <option :value="null">انتخاب کنید</option>
                   <option v-for="(month, index) in getMonths()" :key="index" :value="index + 1">
                     {{ month }}
                   </option>
@@ -110,37 +112,32 @@
               </div>
               <div class="form-group">
                 <label>روز</label>
-                <input
-                  type="number"
-                  v-model.number="formData.date.day"
-                  class="form-control"
-                  min="1"
-                  :max="getMaxDays()"
-                />
+                <select v-model.number="formData.date.day" class="form-control">
+                  <option :value="null">انتخاب کنید</option>
+                  <option v-for="d in getDaysInMonth()" :key="d" :value="d">{{ d }}</option>
+                </select>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label>ساعت (اختیاری)</label>
-                <input
-                  type="number"
+                <select
                   v-model.number="formData.time.hour"
                   class="form-control"
-                  min="0"
-                  max="23"
-                  placeholder="00"
-                />
+                >
+                  <option :value="null">انتخاب نشده</option>
+                  <option v-for="h in 24" :key="h" :value="h">{{ h }}</option>
+                </select>
               </div>
               <div class="form-group">
                 <label>دقیقه (اختیاری)</label>
-                <input
-                  type="number"
+                <select
                   v-model.number="formData.time.minute"
                   class="form-control"
-                  min="0"
-                  max="59"
-                  placeholder="00"
-                />
+                >
+                  <option :value="null">انتخاب نشده</option>
+                  <option v-for="m in 60" :key="m" :value="m">{{ m }}</option>
+                </select>
               </div>
             </div>
             <div class="form-group">
@@ -197,6 +194,7 @@ export default {
   mounted() {
     this.loadReminders()
     this.initFormData()
+    this.checkQueryParams()
   },
   methods: {
     async loadReminders() {
@@ -366,13 +364,85 @@ export default {
         return '1445'
       }
     },
-    getMaxDays() {
-      if (!this.formData.date.month) return 31
-      if (this.formData.calendar === 'jalali') {
-        const persianDate = new window.persianDate([this.formData.date.year || 1400, this.formData.date.month, 1])
-        return persianDate.daysInMonth()
+    getDaysInMonth() {
+      if (!this.formData.date.month || !this.formData.date.year) {
+        return []
       }
-      return 31
+
+      let daysInMonth = 31
+
+      if (this.formData.calendar === 'jalali') {
+        // شمسی: 6 ماه اول 31 روز، 5 ماه بعدی 30 روز، اسفند 29 یا 30 روز (کبیسه)
+        const persianDate = new window.persianDate([this.formData.date.year, this.formData.date.month, 1])
+        daysInMonth = persianDate.daysInMonth()
+      } else if (this.formData.calendar === 'gregorian') {
+        // میلادی: استفاده از Date
+        const date = new Date(this.formData.date.year, this.formData.date.month, 0)
+        daysInMonth = date.getDate()
+      } else {
+        // قمری: استفاده از moment-hijri
+        if (window.moment && typeof window.moment === 'function') {
+          try {
+            const hijriDate = window.moment(`${this.formData.date.year}/${this.formData.date.month}/1`, 'iYYYY/iM/iD')
+            if (hijriDate && hijriDate.isValid()) {
+              if (typeof window.moment.iDaysInMonth === 'function') {
+                daysInMonth = window.moment.iDaysInMonth(this.formData.date.year, this.formData.date.month - 1)
+              } else if (typeof hijriDate.iDaysInMonth === 'function') {
+                daysInMonth = hijriDate.iDaysInMonth()
+              } else {
+                const endOfMonth = hijriDate.clone().endOf('iMonth')
+                daysInMonth = parseInt(endOfMonth.format('iDD'))
+              }
+            }
+          } catch (e) {
+            console.error('Error calculating hijri days:', e)
+            daysInMonth = 30 // Default for hijri
+          }
+        } else {
+          daysInMonth = 30 // Default for hijri
+        }
+      }
+
+      // Generate array of days
+      const days = []
+      for (let i = 1; i <= daysInMonth; i++) {
+        days.push(i)
+      }
+      return days
+    },
+    getMaxDays() {
+      const days = this.getDaysInMonth()
+      return days.length > 0 ? days.length : 31
+    },
+    checkQueryParams() {
+      const query = this.$route.query
+      if (query.calendar && query.year && query.month && query.day) {
+        // Set calendar type
+        this.formData.calendar = query.calendar
+        
+        // Set date
+        this.formData.date = {
+          year: parseInt(query.year),
+          month: parseInt(query.month),
+          day: parseInt(query.day)
+        }
+        
+        // Open modal
+        this.showAddModal = true
+        
+        // Clear query parameters after using them
+        this.$nextTick(() => {
+          this.$router.replace({ query: {} })
+        })
+      }
+    }
+  },
+  watch: {
+    '$route.query': {
+      handler() {
+        this.checkQueryParams()
+      },
+      immediate: false
     }
   }
 }

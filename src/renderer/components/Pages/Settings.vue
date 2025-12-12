@@ -72,7 +72,9 @@ export default {
   },
   computed: {
     isDark() {
-      return this.$store.getters['Theme/isDark']
+      // Use state directly for better reactivity
+      const theme = this.$store.state.Theme && this.$store.state.Theme.theme ? this.$store.state.Theme.theme : 'light'
+      return theme === 'dark'
     }
   },
   mounted() {
@@ -101,12 +103,21 @@ export default {
       }
     },
     toggleTheme() {
-      const newTheme = this.isDark ? 'light' : 'dark'
+      const currentTheme = this.$store.state.Theme && this.$store.state.Theme.theme ? this.$store.state.Theme.theme : 'light'
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark'
+      
       this.$store.dispatch('Theme/setTheme', newTheme)
-      this.$root.$emit('show-notification', {
-        type: 'success',
-        title: 'تم تغییر کرد',
-        message: `تم ${newTheme === 'dark' ? 'تاریک' : 'روشن'} فعال شد`
+      
+      // Use nextTick to ensure state is updated
+      this.$nextTick(() => {
+        // Force update to ensure UI reflects the change
+        this.$forceUpdate()
+        
+        this.$root.$emit('show-notification', {
+          type: 'success',
+          title: 'تم تغییر کرد',
+          message: `تم ${newTheme === 'dark' ? 'تاریک' : 'روشن'} فعال شد`
+        })
       })
     }
   },

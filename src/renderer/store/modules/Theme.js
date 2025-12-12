@@ -1,12 +1,13 @@
 const state = {
-  theme: 'light' // 'light' or 'dark'
+  theme: 'light' 
 }
 
 const mutations = {
   SET_THEME(state, theme) {
     state.theme = theme
     localStorage.setItem('app.theme', theme)
-    // Apply theme to document
+    
+    // Apply theme to document element
     if (theme === 'dark') {
       document.documentElement.classList.add('dark-theme')
       document.documentElement.classList.remove('light-theme')
@@ -14,6 +15,9 @@ const mutations = {
       document.documentElement.classList.add('light-theme')
       document.documentElement.classList.remove('dark-theme')
     }
+    
+    // Force update to ensure CSS variables are applied
+    document.documentElement.setAttribute('data-theme', theme)
   }
 }
 
