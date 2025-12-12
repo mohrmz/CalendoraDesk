@@ -12,12 +12,12 @@
           <div class="setting-section">
             <h3 class="section-title">ظاهر</h3>
             <div class="setting-item">
-              <label class="setting-label">
+              <div class="setting-label">
                 <span>تم تاریک</span>
-                <div class="toggle-switch" :class="{ active: isDark }" @click="toggleTheme">
+                <div class="toggle-switch" :class="{ active: isDark }" @click.stop.prevent="toggleTheme">
                   <div class="toggle-slider"></div>
                 </div>
-              </label>
+              </div>
               <p class="setting-description">استفاده از تم تاریک برای راحتی چشم</p>
             </div>
           </div>
@@ -68,13 +68,53 @@ export default {
       active_close_button: false,
       tray_after_minimize: true,
       run_startup: true,
+      themeUpdateKey: 0 // Force reactivity for theme changes
     }
   },
   computed: {
     isDark() {
-      // Use state directly for better reactivity
-      const theme = this.$store.state.Theme && this.$store.state.Theme.theme ? this.$store.state.Theme.theme : 'light'
-      return theme === 'dark'
+      // Use themeUpdateKey to force reactivity
+      const _ = this.themeUpdateKey
+      
+      // Check DOM first (most reliable)
+      if (typeof document !== 'undefined' && document.documentElement) {
+        const hasDarkClass = document.documentElement.classList.contains('dark-theme')
+        if (hasDarkClass) return true
+        const hasLightClass = document.documentElement.classList.contains('light-theme')
+        if (hasLightClass) return false
+      }
+      
+      // Fallback to localStorage
+      const storedTheme = localStorage.getItem('app.theme')
+      if (storedTheme === 'dark') return true
+      if (storedTheme === 'light') return false
+      
+      // Fallback to store
+      try {
+        return this.$store.getters['Theme/isDark'] || false
+      } catch (e) {
+        const theme = this.$store.state.Theme && this.$store.state.Theme.theme ? this.$store.state.Theme.theme : 'light'
+        return theme === 'dark'
+      }
+    }
+  },
+  watch: {
+    '$store.state.Theme.theme': {
+      handler() {
+        // Force update when theme changes
+        this.$nextTick(() => {
+          this.$forceUpdate()
+        })
+      },
+      immediate: true
+    }
+  },
+  data() {
+    return {
+      active_close_button: false,
+      tray_after_minimize: true,
+      run_startup: true,
+      themeUpdateKey: 0 // Force reactivity
     }
   },
   mounted() {
@@ -103,21 +143,51 @@ export default {
       }
     },
     toggleTheme() {
-      const currentTheme = this.$store.state.Theme && this.$store.state.Theme.theme ? this.$store.state.Theme.theme : 'light'
+      console.log('toggleTheme called')
+      
+      // Get current theme from DOM or localStorage (more reliable)
+      const currentThemeFromDOM = document.documentElement.classList.contains('dark-theme') ? 'dark' : 'light'
+      const currentThemeFromStorage = localStorage.getItem('app.theme') || 'light'
+      const currentTheme = currentThemeFromDOM === 'dark' || currentThemeFromStorage === 'dark' ? 'dark' : 'light'
+      
+      console.log('Current theme (from DOM):', currentThemeFromDOM)
+      console.log('Current theme (from storage):', currentThemeFromStorage)
+      console.log('Current theme (final):', currentTheme)
+      
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark'
+      console.log('New theme:', newTheme)
       
-      this.$store.dispatch('Theme/setTheme', newTheme)
+      // Apply theme to DOM immediately
+      document.documentElement.classList.remove('dark-theme', 'light-theme')
+      document.documentElement.classList.add(newTheme + '-theme')
+      document.documentElement.setAttribute('data-theme', newTheme)
+      localStorage.setItem('app.theme', newTheme)
       
-      // Use nextTick to ensure state is updated
+      // Dispatch action (vuex-electron requires dispatch, not commit)
+      try {
+        const dispatchResult = this.$store.dispatch('Theme/setTheme', newTheme)
+        if (dispatchResult && typeof dispatchResult.catch === 'function') {
+          dispatchResult.catch(e => {
+            console.error('Error dispatching theme action:', e)
+          })
+        }
+      } catch (e) {
+        console.error('Error dispatching theme action:', e)
+      }
+      
+      // Force update to ensure UI reflects the change
+      this.themeUpdateKey++
       this.$nextTick(() => {
-        // Force update to ensure UI reflects the change
         this.$forceUpdate()
-        
-        this.$root.$emit('show-notification', {
-          type: 'success',
-          title: 'تم تغییر کرد',
-          message: `تم ${newTheme === 'dark' ? 'تاریک' : 'روشن'} فعال شد`
-        })
+        console.log('Force update completed, isDark should be:', newTheme === 'dark')
+        console.log('Current DOM classes:', document.documentElement.classList.toString())
+      })
+      
+      // Show notification
+      this.$root.$emit('show-notification', {
+        type: 'success',
+        title: 'تم تغییر کرد',
+        message: `تم ${newTheme === 'dark' ? 'تاریک' : 'روشن'} فعال شد`
       })
     }
   },
