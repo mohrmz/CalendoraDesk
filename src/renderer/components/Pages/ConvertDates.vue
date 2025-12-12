@@ -1,16 +1,14 @@
 <template>
   <div id="wrapper">
     <div class="dashboard">
-      <div class="page">
-        <div class="head">
-          <span class="d-block h5 pr-2 pt-2">تبدیل تاریخ</span>
-        </div>
+      <div class="page-header">
+        <h2 class="page-title">تبدیل تاریخ</h2>
+        <p class="page-subtitle">تبدیل تاریخ بین تقویم‌های شمسی، میلادی و قمری</p>
       </div>
-      <div class="clearfix"></div>
-      <div class="tools pb-5 pt-5">
-        <div class="d-flex justify-content-center align-items-center pb-5">
+      <div class="convert-container">
+        <div class="convert-form">
 
-          <div class="col-md-3">
+          <div class="form-group full-width">
             <label for="type">نوع تبدیل</label>
             <select id="type" @change="changeType()" class="form-control" v-model="type">
               <option selected="selected" value="1">خورشیدی (جلالی) به میلادی و قمری</option>
@@ -18,7 +16,8 @@
               <option value="2">قمری به خورشیدی (جلالی) و میلادی</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="form-row">
+          <div class="form-group">
             <label for="day">روز</label>
             <select id="day" v-model="day" class="form-control">
               <option value="1">1</option>
@@ -54,7 +53,7 @@
               <option value="31">31</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="form-group">
             <label>ماه</label>
             <select v-model="jalali_month" class="form-control" v-show="type === '1' ">
               <option value="1">فروردین-ماه اول</option>
@@ -99,34 +98,31 @@
               <option value="12">ذوالحجه-ماه دوازدهم</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="form-group">
             <label for="year">سال</label>
-            <input type="text" id="year" v-model="year" class="form-control">
+            <input type="number" id="year" v-model.number="year" class="form-control">
           </div>
-          <div class="col-md-2">
-            <label class="invisible ">بررسی</label>
-            <button @click="convert()" class="btn btn-block text-white" id="submit">
-              تبدیل
-            </button>
           </div>
+          <button @click="convert()" class="btn-convert">
+            <i class="fa fa-exchange"></i>
+            تبدیل
+          </button>
         </div>
-        <div class="clearfix"></div>
-        <hr>
-        <div class="d-flex pt-5">
-          <div class="col-md-4 d-flex flex-column justify-content-around d-block text-center ">
-            <h5 class="font-weight-bold text-danger">شمسی :</h5>
-            <span class="pt-4">{{ jalali_convert_date }}</span>
-            <span class="pt-4">{{ jalali_convert_numeral }}</span>
+        <div class="results-grid">
+          <div class="result-card">
+            <div class="result-label">شمسی (جلالی)</div>
+            <div class="result-date">{{ jalali_convert_date || '--' }}</div>
+            <div class="result-numeral">{{ jalali_convert_numeral || '--' }}</div>
           </div>
-          <div class="col-md-4 d-flex flex-column justify-content-around d-block text-center ">
-            <h5 class="font-weight-bold text-danger">قمری :</h5>
-            <span class="pt-4">{{ hijri_convert_date }}</span>
-            <span class="pt-4">{{ hijri_convert_numeral }}</span>
+          <div class="result-card">
+            <div class="result-label">قمری</div>
+            <div class="result-date">{{ hijri_convert_date || '--' }}</div>
+            <div class="result-numeral">{{ hijri_convert_numeral || '--' }}</div>
           </div>
-          <div class="col-md-4 d-flex flex-column justify-content-around d-block text-center ">
-            <h5 class="font-weight-bold text-danger">میلادی :</h5>
-            <span class="pt-4">{{ gregorian_convert_date }}</span>
-            <span class="pt-4">{{ gregorian_convert_numeral }}</span>
+          <div class="result-card">
+            <div class="result-label">میلادی</div>
+            <div class="result-date">{{ gregorian_convert_date || '--' }}</div>
+            <div class="result-numeral">{{ gregorian_convert_numeral || '--' }}</div>
           </div>
         </div>
       </div>
@@ -256,6 +252,152 @@ export default {
 </script>
 
 <style scoped>
+.page-header {
+  padding: 24px;
+  margin-bottom: 32px;
+}
 
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.convert-container {
+  padding: 0 24px 24px;
+}
+
+.convert-form {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.btn-convert {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-convert:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.result-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.result-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.result-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.result-date {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-color);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.result-numeral {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 </style>

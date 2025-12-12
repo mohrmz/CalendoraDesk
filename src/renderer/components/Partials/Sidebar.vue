@@ -13,6 +13,9 @@
         <router-link to="/notes">
           <div class="item"><i class="fa fa-sticky-note"></i> دفترچه یادداشت</div>
         </router-link>
+        <router-link to="/reminders">
+          <div class="item"><i class="fa fa-bell"></i> یادآورها</div>
+        </router-link>
         <router-link to="/convert-dates">
           <div class="item"><i class="fa fa-exchange"></i> تبدیل تاریخ</div>
         </router-link>

@@ -21,6 +21,11 @@ export default new Router({
             component: require('@/components/Pages/Notes').default
         },
         {
+            path: '/reminders',
+            name: 'reminders',
+            component: require('@/components/Pages/Reminders').default
+        },
+        {
             path: '/convert-dates',
             name: 'convert-dates',
             component: require('@/components/Pages/ConvertDates').default
