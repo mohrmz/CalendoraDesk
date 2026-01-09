@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "auto-launch": "^5.0.5",
-    "axios": "^0.21.1",
+    "axios": "^0.30.2",
     "electron-log": "^4.4.8",
     "moment": "^2.29.4",
     "moment-hijri": "^2.1.2",
